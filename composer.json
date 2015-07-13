@@ -1,0 +1,21 @@
+{
+    "name": "aciliainternet/banner-bundle",
+    "type": "bundle",
+    "description": "Acilia Banner Bundle",
+    "keywords": ["bundle"],
+    "homepage": "https://github.com/aciliainternet/BannerBundle",
+    "authors": [
+        {
+            "name": "Acilia Internet",
+            "homepage": "http://acilia.es"
+        }
+    ],
+    "require": {
+        "php":                      ">=5.3.3",
+        "symfony/framework-bundle": ">=2.3.0"
+    },
+    "autoload": {
+        "psr-0": { "Acilia\\Bundle\\BannerBundle": "" }
+    },
+    "target-dir": "Acilia/Bundle/BannerBundle"
+}

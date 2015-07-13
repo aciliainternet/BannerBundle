@@ -1,0 +1,12 @@
+parameters:
+
+services:
+    acilia.banners:
+        class: Acilia\Bundle\BannerBundle\Service\BannerService
+        arguments: [@kernel]
+
+    acilia.banners.twig_extension:
+        class: Acilia\Bundle\BannerBundle\Library\Twig\Extension\BannerExtension
+        arguments: [@acilia.banners]
+        tags:
+          - { name: twig.extension }
