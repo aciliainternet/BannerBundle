@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of the Acilia Component / Rating Bundle.
+ * This file is part of the Acilia Component / Banner Bundle.
  *
  * (c) Acilia Internet S.L. <info@acilia.es>
  *
