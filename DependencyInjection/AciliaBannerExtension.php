@@ -1,6 +1,6 @@
 <?php
 
-namespace Acilia\Bundle\BannersBundle\DependencyInjection;
+namespace Acilia\Bundle\BannerBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;

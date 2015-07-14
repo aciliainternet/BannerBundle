@@ -2,7 +2,8 @@
 namespace Acilia\Bundle\BannerBundle\Service;
 
 use Acilia\Bundle\BannerBundle\Library\BannerTag;
-use Symfony\Component\HttpFoundation\Request;
+use Acilia\Bundle\BannerBundle\Library\BannerInterface;
+use Acilia\Component\Memcached\Service\MemcachedService;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Doctrine\Bundle\DoctrineBundle\Registry as Doctrine;
 
@@ -41,7 +42,7 @@ class BannerService
         $this->referenceId = null;
     }
 
-    public function getCode($regionId, $regionCC, $bannerType, $place = null, $referenceId = null)
+    public function getCode(BannerInterface $region, $bannerType, $place = null, $referenceId = null)
     {
         if ($place == null) {
             $place = $this->place;
@@ -55,13 +56,14 @@ class BannerService
         // Get URL
         $currentUrl = $this->requestStack->getMasterRequest()->getPathInfo();
 
-        $key = 'Banner:' . $regionCC . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
+        $key = 'Banner:' . $region->getResourceCC() . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
         $bannerTag = $this->memcache->get($key);
         if ($this->memcache->notFound()) {
+
             // Create Banner Tag
             $bannerTag = new BannerTag();
-            $bannerTag->setCountryCode($regionCC)
-                ->setRegionId($regionId)
+            $bannerTag->setResourceCC($region->getResourceCC())
+                ->setResourceId($region->getResourceId())
                 ->setBannerType($bannerType)
                 ->setPlace($place)
                 ->setReferenceId($referenceId);
@@ -75,8 +77,8 @@ class BannerService
 
             // Fallback
             // If banner tag is empty, type is not common, and place is serie, and there was a reference id, look for a serie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SERIE && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_SERIE)
+            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
+                $bannerTag->setPlace(BannerTag::PLACE_SHOW)
                     ->setReferenceId(null);
                 $this->fillBannerTag($bannerTag, $currentUrl);
             }
@@ -91,8 +93,8 @@ class BannerService
 
             // Fallback
             // If banner tag is empty, type is common, and place is serie, and there was a reference id, look for a serie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SERIE && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_SERIE)
+            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
+                $bannerTag->setPlace(BannerTag::PLACE_SHOW)
                     ->setReferenceId(null);
                 $this->fillBannerTag($bannerTag, $currentUrl);
 
@@ -143,7 +145,7 @@ class BannerService
         if (!is_array($this->types)) {
             $types = $this->memcache->get($key);
             if ($this->memcache->notFound()) {
-                $bannerTypes = $this->doctrine->getManager()->getRepository('BannerBundle:BannerType')->findAll();
+                $bannerTypes = $this->doctrine->getManager()->getRepository('AciliaBannerBundle:BannerType')->findAll();
                 $types = array();
 
                 foreach ($bannerTypes as $bannerType) {
@@ -197,9 +199,9 @@ class BannerService
     {
         // Fetch Banners
         $dql = 'SELECT b '
-            . 'FROM BannerBundle:Banner b '
+            . 'FROM AciliaBannerBundle:Banner b '
             . 'WHERE b.status = true '
-            . '  AND b.region = :regionId '
+            . '  AND b.resourceId = :resourceId '
             . '  AND b.type = :typeId '
             . '  AND b.place = :place '
             . '  AND b.publishSince <= :publishSince '
@@ -208,7 +210,7 @@ class BannerService
             . 'ORDER BY b.modifiedAt DESC ';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
-            ->setParameter('regionId', $bannerTag->getRegionId())
+            ->setParameter('resourceId', $bannerTag->getResourceId())
             ->setParameter('typeId', $this->getType($bannerTag->getBannerType()))
             ->setParameter('place', $bannerTag->getPlace())
             ->setParameter('publishSince', date('Y-m-d'))
@@ -242,23 +244,23 @@ class BannerService
         }
 
         // For Debugging
-        $bannerTag->addDebug("Region Id: {$bannerTag->getRegionId()} | Country Code: {$bannerTag->getCountryCode()}  | Place: {$bannerTag->getPlace()} " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: {$bannerTag->getBannerType()}");
+        $bannerTag->addDebug("Resource Id: {$bannerTag->getResourceId()} | Country Code: {$bannerTag->getResourceCC()}  | Place: {$bannerTag->getPlace()} " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: {$bannerTag->getBannerType()}");
     }
 
     protected function isPageAvailable(BannerTag $bannerTag, $currentUrl)
     {
         // Fetch Disabling Banners
         $dql = 'SELECT b '
-            . 'FROM BannerBundle:Banner b '
+            . 'FROM AciliaBannerBundle:Banner b '
             . 'WHERE b.status = true '
-            . '  AND b.region = :regionId '
+            . '  AND b.resourceId = :resourceId '
             . '  AND b.type = :typeId '
             . '  AND b.publishSince <= :publishSince '
             . '  AND (b.publishUntil >= :publishUntil OR b.publishUntil IS NULL OR b.publishUntil = \'0000-00-00\') '
             . 'ORDER BY b.modifiedAt DESC ';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
-            ->setParameter('regionId', $bannerTag->getRegionId())
+            ->setParameter('resourceId', $bannerTag->getResourceId())
             ->setParameter('typeId', $this->getType('none'))
             ->setParameter('publishSince', date('Y-m-d'))
             ->setParameter('publishUntil', date('Y-m-d'));

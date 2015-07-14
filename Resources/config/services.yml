@@ -3,7 +3,7 @@ parameters:
 services:
     acilia.banners:
         class: Acilia\Bundle\BannerBundle\Service\BannerService
-        arguments: [@kernel]
+        arguments: [@request_stack, @doctrine, @core.memcached]
 
     acilia.banners.twig_extension:
         class: Acilia\Bundle\BannerBundle\Library\Twig\Extension\BannerExtension

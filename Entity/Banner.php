@@ -11,7 +11,6 @@
 
 namespace Acilia\Bundle\BannerBundle\Entity;
 
-//use Acilia\Bundle\BannerBundle\Library\BannerInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -27,42 +26,100 @@ use Doctrine\ORM\Mapping as ORM;
 class Banner
 {
     /**
-     * @ORM\Column(type="integer", name="result_id", nullable=false)
+     * @var integer
+     *
+     * @ORM\Column(name="banner_id", type="integer", nullable=false)
      * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
+     * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $id;
 
     /**
-     * @ORM\Column(name="result_resource", type="string", length=40)
+     * @var string
+     *
+     * @ORM\Column(name="banner_place", type="string", nullable=false)
      */
-    private $resource;
+    private $place;
 
     /**
-     * @ORM\Column(name="result_resource_type", type="string", length=32)
+     * @var integer
+     *
+     * @ORM\Column(name="banner_reference_id", type="integer", nullable=true)
      */
-    private $resourceType;
+    private $referenceId;
 
     /**
-     * @ORM\Column(name="result_resource_id", type="string", length=32)
+     * @var string
+     *
+     * @ORM\Column(name="banner_name", type="string", length=255, nullable=false)
+     */
+    private $name;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="banner_tag", type="text", nullable=false)
+     */
+    private $tag;
+
+    /**
+     * @var boolean
+     *
+     * @ORM\Column(name="banner_status", type="boolean", nullable=false)
+     */
+    private $status;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="banner_publish_since", type="date", nullable=false)
+     */
+    private $publishSince;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="banner_publish_until", type="date", nullable=true)
+     */
+    private $publishUntil;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="banner_url_exclude", type="text", nullable=true)
+     */
+    private $urlExclude;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="banner_url_include", type="text", nullable=true)
+     */
+    private $urlInclude;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="banner_modified_at", type="datetime", nullable=false)
+     */
+    private $modifiedAt;
+
+    /**
+     * @var BannerType
+     *
+     * @ORM\ManyToOne(targetEntity="BannerType")
+     * @ORM\JoinColumns({
+     * @ORM\JoinColumn(name="banner_type", referencedColumnName="banner_type_id")
+     * })
+     */
+    private $type;
+
+    /**
+     * @var integer
+     *
+     * @ORM\Column(name="banner_resource_id", type="integer")
      */
     private $resourceId;
-
-    /**
-     * @ORM\Column(name="result_votes", type="integer")
-     */
-    private $votes;
-
-    /**
-     * @ORM\Column(name="result_value", type="decimal", precision=5, scale=2)
-     */
-    private $value;
-
-    /**
-     * @ORM\Column(name="result_extra", type="string", length=32)
-     */
-    private $extra;
-
 
     /**
      * Get id
@@ -75,58 +132,265 @@ class Banner
     }
 
     /**
-     * Set resource
+     * Set place
      *
-     * @param string $resource
-     * @return RatingResult
+     * @param  string $place
+     * @return Banner
      */
-    public function setResource($resource)
+    public function setPlace($place)
     {
-        $this->resource = $resource;
+        $this->place = $place;
 
         return $this;
     }
 
     /**
-     * Get resource
+     * Get place
      *
      * @return string
      */
-    public function getResource()
+    public function getPlace()
     {
-        return $this->resource;
+        return $this->place;
     }
 
     /**
-     * Set resourceType
+     * Set referenceId
      *
-     * @param string $resourceType
-     * @return RatingResult
+     * @param  integer $referenceId
+     * @return Banner
      */
-    public function setResourceType($resourceType)
+    public function setReferenceId($referenceId)
     {
-        $this->resourceType = $resourceType;
+        $this->referenceId = $referenceId;
 
         return $this;
     }
 
     /**
-     * Get resourceType
+     * Get referenceId
+     *
+     * @return integer
+     */
+    public function getReferenceId()
+    {
+        return $this->referenceId;
+    }
+
+    /**
+     * Set name
+     *
+     * @param  string $name
+     * @return Banner
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get name
      *
      * @return string
      */
-    public function getResourceType()
+    public function getName()
     {
-        return $this->resourceType;
+        return $this->name;
+    }
+
+    /**
+     * Set tag
+     *
+     * @param  string $tag
+     * @return Banner
+     */
+    public function setTag($tag)
+    {
+        $this->tag = $tag;
+
+        return $this;
+    }
+
+    /**
+     * Get tag
+     *
+     * @return string
+     */
+    public function getTag()
+    {
+        return $this->tag;
+    }
+
+    /**
+     * Set status
+     *
+     * @param  boolean $status
+     * @return Banner
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    /**
+     * Get status
+     *
+     * @return boolean
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * Set publishSince
+     *
+     * @param  \DateTime $startAt
+     * @return Banner
+     */
+    public function setPublishSince($publishSince)
+    {
+        $this->publishSince = $publishSince;
+
+        return $this;
+    }
+
+    /**
+     * Get publishSince
+     *
+     * @return \DateTime
+     */
+    public function getPublishSince()
+    {
+        return $this->publishSince;
+    }
+
+    /**
+     * Set publishUntil
+     *
+     * @param  \DateTime $endAt
+     * @return Banner
+     */
+    public function setPublishUntil($publishUntil)
+    {
+        $this->publishUntil = $publishUntil;
+
+        return $this;
+    }
+
+    /**
+     * Get publishUntil
+     *
+     * @return \DateTime
+     */
+    public function getPublishUntil()
+    {
+        return $this->publishUntil;
+    }
+
+    /**
+     * Set urlExclude
+     *
+     * @param  string $urlExclude
+     * @return Banner
+     */
+    public function setUrlExclude($urlExclude)
+    {
+        $this->urlExclude = $urlExclude;
+
+        return $this;
+    }
+
+    /**
+     * Get urlExclude
+     *
+     * @return string
+     */
+    public function getUrlExclude()
+    {
+        return $this->urlExclude;
+    }
+
+    /**
+     * Set urlInclude
+     *
+     * @param  string $urlInclude
+     * @return Banner
+     */
+    public function setUrlInclude($urlInclude)
+    {
+        $this->urlInclude = $urlInclude;
+
+        return $this;
+    }
+
+    /**
+     * Get urlInclude
+     *
+     * @return string
+     */
+    public function getUrlInclude()
+    {
+        return $this->urlInclude;
+    }
+
+    /**
+     * Set modifiedAt
+     *
+     * @param  \DateTime $modifiedAt
+     * @return Banner
+     */
+    public function setModifiedAt($modifiedAt)
+    {
+        $this->modifiedAt = $modifiedAt;
+
+        return $this;
+    }
+
+    /**
+     * Get modifiedAt
+     *
+     * @return \DateTime
+     */
+    public function getModifiedAt()
+    {
+        return $this->modifiedAt;
+    }
+
+    /**
+     * Set type
+     *
+     * @param  BannerType $type
+     * @return Banner
+     */
+    public function setType(BannerType $type = null)
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    /**
+     * Get type
+     *
+     * @return BannerType
+     */
+    public function getType()
+    {
+        return $this->type;
     }
 
     /**
      * Set resourceId
      *
-     * @param string $resourceId
-     * @return RatingResult
+     * @param  integer $resourceId
+     * @return Banner
      */
-    public function setResourceId($resourceId)
+    public function setResourceId($resourceId = null)
     {
         $this->resourceId = $resourceId;
 
@@ -134,81 +398,13 @@ class Banner
     }
 
     /**
-     * Get resourceId
+     * Get region
      *
-     * @return string
+     * @return integer
      */
     public function getResourceId()
     {
         return $this->resourceId;
     }
 
-    /**
-     * Set votes
-     *
-     * @param integer $votes
-     * @return RatingResult
-     */
-    public function setVotes($votes)
-    {
-        $this->votes = $votes;
-
-        return $this;
-    }
-
-    /**
-     * Get votes
-     *
-     * @return integer
-     */
-    public function getVotes()
-    {
-        return $this->votes;
-    }
-
-    /**
-     * Set value
-     *
-     * @param string $value
-     * @return RatingResult
-     */
-    public function setValue($value)
-    {
-        $this->value = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get value
-     *
-     * @return string
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set extra
-     *
-     * @param string $extra
-     * @return RatingResult
-     */
-    public function setExtra($value)
-    {
-        $this->extra = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get extra
-     *
-     * @return string
-     */
-    public function getExtra()
-    {
-        return $this->extra;
-    }
 }

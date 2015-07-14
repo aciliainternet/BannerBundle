@@ -1,6 +1,6 @@
 <?php
 
-namespace Acilia\Bundle\BannersBundle\DependencyInjection;
+namespace Acilia\Bundle\BannerBundle\DependencyInjection;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
