@@ -1,7 +1,6 @@
 <?php
 namespace Acilia\Bundle\BannerBundle\Library\Twig\Extension;
 
-use Acilia\Bundle\BannerBundle\Library\BannerInterface;
 use Acilia\Bundle\BannerBundle\Library\Twig\Tag\Banner\ConfiguratorTokenParser;
 use Acilia\Bundle\BannerBundle\Service\BannerService;
 
@@ -28,9 +27,9 @@ class BannerExtension extends \Twig_Extension
         ];
     }
 
-    public function render(BannerInterface $region, $bannerType, $place = null, $referenceId = null)
+    public function render($bannerType, $place = null, $referenceId = null)
     {
-        return $this->getBanner()->getCode($region, $bannerType, $place, $referenceId);
+        return $this->getBanner()->getCode($bannerType, $place, $referenceId);
     }
 
     public function getBanner()

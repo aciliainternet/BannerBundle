@@ -23,8 +23,7 @@ class BannerTag
 
     protected $id;
     protected $name;
-    protected $resourceCC;
-    protected $resourceId;
+    protected $resource;
     protected $bannerType;
     protected $referenceId;
     protected $place;
@@ -43,28 +42,16 @@ class BannerTag
         return $this;
     }
 
-    public function setResourceCC($resourceCC)
+    public function setResource($resource)
     {
-        $this->resourceCC = $resourceCC;
+        $this->resource = $resource;
 
         return $this;
     }
 
-    public function getResourceCC()
+    public function getResource()
     {
-        return $this->resourceCC;
-    }
-
-    public function setResourceId($resourceId)
-    {
-        $this->resourceId = $resourceId;
-
-        return $this;
-    }
-
-    public function getResourceId()
-    {
-        return $this->resourceId;
+        return $this->resource;
     }
 
     public function setBannerType($bannerType)

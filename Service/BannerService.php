@@ -1,14 +1,24 @@
 <?php
 namespace Acilia\Bundle\BannerBundle\Service;
 
+use Acilia\Bundle\BannerBundle\Event\ResourceBannerEvent;
 use Acilia\Bundle\BannerBundle\Library\BannerTag;
-use Acilia\Bundle\BannerBundle\Library\BannerInterface;
 use Acilia\Component\Memcached\Service\MemcachedService;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Doctrine\Bundle\DoctrineBundle\Registry as Doctrine;
+use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class BannerService
+class BannerService implements EventSubscriberInterface
 {
+    /**
+     * Event Dispatcher
+     *
+     * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+     */
+    protected $dispatcher;
+
     /**
      * Memcache Service
      * @var \Acilia\Component\Memcached\Service\MemcachedService
@@ -32,8 +42,9 @@ class BannerService
     protected $place;
     protected $referenceId;
 
-    public function __construct(RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache)
+    public function __construct(EventDispatcherInterface $dispatcher, RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache)
     {
+        $this->dispatcher = $dispatcher;
         $this->requestStack = $requestStack;
         $this->doctrine = $doctrine;
         $this->memcache = $memcache;
@@ -42,8 +53,10 @@ class BannerService
         $this->referenceId = null;
     }
 
-    public function getCode(BannerInterface $region, $bannerType, $place = null, $referenceId = null)
+    public function getCode($bannerType, $place = null, $referenceId = null)
     {
+        $bannerTag = '';
+
         if ($place == null) {
             $place = $this->place;
         }
@@ -56,83 +69,91 @@ class BannerService
         // Get URL
         $currentUrl = $this->requestStack->getMasterRequest()->getPathInfo();
 
-        $key = 'Banner:' . $region->getResourceCC() . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
-        $bannerTag = $this->memcache->get($key);
-        if ($this->memcache->notFound()) {
+        // Get resource
+        $event = new ResourceBannerEvent();
 
-            // Create Banner Tag
-            $bannerTag = new BannerTag();
-            $bannerTag->setResourceCC($region->getResourceCC())
-                ->setResourceId($region->getResourceId())
-                ->setBannerType($bannerType)
-                ->setPlace($place)
-                ->setReferenceId($referenceId);
+        $this->dispatcher->dispatch(ResourceBannerEvent::NAME, $event);
+        if ($event->isAvailable()) {
 
-            if ($this->isPageAvailable($bannerTag, $currentUrl)) {
-                return '<!-- BANNER BEGIN - This page has it\'s Ads Disabled - BANNER END -->';
-            }
+            $resource = $event->getResource();
 
-            // Fill Banner Tag
-            $this->fillBannerTag($bannerTag, $currentUrl);
+            $key = 'Banner:' . $resource . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
+            $bannerTag = $this->memcache->get($key);
+            if ($this->memcache->notFound()) {
 
-            // Fallback
-            // If banner tag is empty, type is not common, and place is serie, and there was a reference id, look for a serie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_SHOW)
-                    ->setReferenceId(null);
-                $this->fillBannerTag($bannerTag, $currentUrl);
-            }
+                // Create Banner Tag
+                $bannerTag = new BannerTag();
+                $bannerTag->setResource($resource)
+                    ->setBannerType($bannerType)
+                    ->setPlace($place)
+                    ->setReferenceId($referenceId);
 
-            // Fallback
-            // If banner tag is empty, type is not common, and place is movie, and there was a reference id, look for a movie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
-                    ->setReferenceId(null);
-                $this->fillBannerTag($bannerTag, $currentUrl);
-            }
+                if ($this->isPageAvailable($bannerTag, $currentUrl)) {
+                    return '<!-- BANNER BEGIN - This page has it\'s Ads Disabled - BANNER END -->';
+                }
 
-            // Fallback
-            // If banner tag is empty, type is common, and place is serie, and there was a reference id, look for a serie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_SHOW)
-                    ->setReferenceId(null);
+                // Fill Banner Tag
                 $this->fillBannerTag($bannerTag, $currentUrl);
 
                 // Fallback
-                // If banner tag is still empty, look for a ROS tag
-                if ($bannerTag->isEmpty()) {
+                // If banner tag is empty, type is not common, and place is serie, and there was a reference id, look for a serie banner without reference id
+                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
+                    $bannerTag->setPlace(BannerTag::PLACE_SHOW)
+                        ->setReferenceId(null);
+                    $this->fillBannerTag($bannerTag, $currentUrl);
+                }
+
+                // Fallback
+                // If banner tag is empty, type is not common, and place is movie, and there was a reference id, look for a movie banner without reference id
+                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
+                    $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
+                        ->setReferenceId(null);
+                    $this->fillBannerTag($bannerTag, $currentUrl);
+                }
+
+                // Fallback
+                // If banner tag is empty, type is common, and place is serie, and there was a reference id, look for a serie banner without reference id
+                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
+                    $bannerTag->setPlace(BannerTag::PLACE_SHOW)
+                        ->setReferenceId(null);
+                    $this->fillBannerTag($bannerTag, $currentUrl);
+
+                    // Fallback
+                    // If banner tag is still empty, look for a ROS tag
+                    if ($bannerTag->isEmpty()) {
+                        $bannerTag->setPlace(BannerTag::PLACE_ROS)
+                            ->setReferenceId(null);
+                        $this->fillBannerTag($bannerTag, $currentUrl);
+                    }
+                }
+
+                // Fallback
+                // If banner tag is empty, type is common, and place is movie, and there was a reference id, look for a movie banner without reference id
+                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
+                    $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
+                        ->setReferenceId(null);
+                    $this->fillBannerTag($bannerTag, $currentUrl);
+
+                    // Fallback
+                    // If banner tag is still empty, look for a ROS tag
+                    if ($bannerTag->isEmpty()) {
+                        $bannerTag->setPlace(BannerTag::PLACE_ROS)
+                            ->setReferenceId(null);
+                        $this->fillBannerTag($bannerTag, $currentUrl);
+                    }
+                }
+
+                // Fallback
+                // If banner tag is empty, type is not common, and place is not ROS or Home, look up for a ROS banner
+                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place != BannerTag::PLACE_ROS) {
                     $bannerTag->setPlace(BannerTag::PLACE_ROS)
                         ->setReferenceId(null);
                     $this->fillBannerTag($bannerTag, $currentUrl);
                 }
+
+                // Save on Memcache
+                $this->memcache->set($key, $bannerTag, 60);
             }
-
-            // Fallback
-            // If banner tag is empty, type is common, and place is movie, and there was a reference id, look for a movie banner without reference id
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
-                $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
-                    ->setReferenceId(null);
-                $this->fillBannerTag($bannerTag, $currentUrl);
-
-                // Fallback
-                // If banner tag is still empty, look for a ROS tag
-                if ($bannerTag->isEmpty()) {
-                    $bannerTag->setPlace(BannerTag::PLACE_ROS)
-                        ->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
-                }
-            }
-
-            // Fallback
-            // If banner tag is empty, type is not common, and place is not ROS or Home, look up for a ROS banner
-            if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place != BannerTag::PLACE_ROS) {
-                $bannerTag->setPlace(BannerTag::PLACE_ROS)
-                    ->setReferenceId(null);
-                $this->fillBannerTag($bannerTag, $currentUrl);
-            }
-
-            // Save on Memcache
-            $this->memcache->set($key, $bannerTag, 60);
         }
 
         return $bannerTag;
@@ -210,7 +231,7 @@ class BannerService
             . 'ORDER BY b.modifiedAt DESC ';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
-            ->setParameter('resourceId', $bannerTag->getResourceId())
+            ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('typeId', $this->getType($bannerTag->getBannerType()))
             ->setParameter('place', $bannerTag->getPlace())
             ->setParameter('publishSince', date('Y-m-d'))
@@ -244,7 +265,7 @@ class BannerService
         }
 
         // For Debugging
-        $bannerTag->addDebug("Resource Id: {$bannerTag->getResourceId()} | Country Code: {$bannerTag->getResourceCC()}  | Place: {$bannerTag->getPlace()} " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: {$bannerTag->getBannerType()}");
+        $bannerTag->addDebug("Resource Id: {$bannerTag->getResource()} | Place: {$bannerTag->getPlace()} " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: {$bannerTag->getBannerType()}");
     }
 
     protected function isPageAvailable(BannerTag $bannerTag, $currentUrl)
@@ -260,7 +281,7 @@ class BannerService
             . 'ORDER BY b.modifiedAt DESC ';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
-            ->setParameter('resourceId', $bannerTag->getResourceId())
+            ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('typeId', $this->getType('none'))
             ->setParameter('publishSince', date('Y-m-d'))
             ->setParameter('publishUntil', date('Y-m-d'));
@@ -274,5 +295,18 @@ class BannerService
         }
 
         return false;
+    }
+
+    /**
+     * Get the Subscribed Events
+     *
+     * @return array
+     */
+    public static function getSubscribedEvents()
+    {
+        return array(
+            KernelEvents::CONTROLLER => array('onKernelController', -128),
+            KernelEvents::RESPONSE => 'onKernelResponse',
+        );
     }
 }
