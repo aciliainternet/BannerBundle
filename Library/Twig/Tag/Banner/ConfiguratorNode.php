@@ -14,7 +14,7 @@ class ConfiguratorNode extends Twig_Node
 
     public function compile(Twig_Compiler $compiler)
     {
-        $compiler->raw('$this->env->getExtension(\'acilia.carassius.twig.banner_extension\')->configure(')
+        $compiler->raw('$this->env->getExtension(\'acilia.twig.banner_extension\')->configure(')
                  ->subcompile($this->getNode('value'))
                  ->raw(');');
     }
