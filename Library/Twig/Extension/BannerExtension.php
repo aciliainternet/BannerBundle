@@ -23,7 +23,7 @@ class BannerExtension extends \Twig_Extension
     public function getFunctions()
     {
         return [
-            'render_banner' => new \Twig_Function_Method($this, 'render', ['is_safe' => array('html')])
+            new \Twig_SimpleFunction('render_banner', [$this, 'render'], ['is_safe' => ['html']]),
         ];
     }
 

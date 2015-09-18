@@ -225,7 +225,7 @@ class BannerService implements EventSubscriberInterface
             . '  AND b.resourceId = :resourceId '
             . '  AND b.type = :typeId '
             . '  AND b.place = :place '
-            . '  AND b.publishSince <= :publishSince '
+            . '  AND (b.publishSince <= :publishSince OR b.publishSince IS NULL OR b.publishSince = \'0000-00-00\') '
             . '  AND (b.publishUntil >= :publishUntil OR b.publishUntil IS NULL OR b.publishUntil = \'0000-00-00\') '
             . ($bannerTag->getReferenceId() !== null ? '  AND b.referenceId = :referenceId ' : '  AND b.referenceId IS NULL ')
             . 'ORDER BY b.modifiedAt DESC ';

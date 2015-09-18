@@ -72,7 +72,7 @@ class Banner
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="banner_publish_since", type="date", nullable=false)
+     * @ORM\Column(name="banner_publish_since", type="date", nullable=true)
      */
     private $publishSince;
 
