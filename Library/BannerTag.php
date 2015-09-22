@@ -13,13 +13,6 @@ namespace Acilia\Bundle\BannerBundle\Library;
 
 class BannerTag
 {
-    const TYPE_COMMON = 'common';
-
-    const PLACE_ROS = 'ros';
-    const PLACE_COMMON = 'common';
-    const PLACE_SHOW = 'show';
-    const PLACE_MOVIE = 'movie';
-
     protected $id;
     protected $name;
     protected $resource;

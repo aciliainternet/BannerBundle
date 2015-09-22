@@ -22,6 +22,12 @@ class AciliaBannerExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
+        // Check Fallbacks
+        if (!$container->hasParameter('acilia.banner.place_fallbacks') || !is_array($container->getParameter('acilia.banner.place_fallbacks'))) {
+            $container->setParameter('acilia.banner.place_fallbacks', []);
+
+        }
+
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');
     }

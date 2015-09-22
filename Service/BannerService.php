@@ -38,18 +38,21 @@ class BannerService implements EventSubscriberInterface
 
     protected $types;
 
+    protected $fallbacks;
+
     // Options
     protected $place;
     protected $referenceId;
 
-    public function __construct(EventDispatcherInterface $dispatcher, RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache)
+    public function __construct(EventDispatcherInterface $dispatcher, RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache, array $fallbacks)
     {
         $this->dispatcher = $dispatcher;
         $this->requestStack = $requestStack;
         $this->doctrine = $doctrine;
         $this->memcache = $memcache;
+        $this->fallbacks = $fallbacks;
 
-        $this->place = BannerTag::PLACE_ROS;
+        $this->place = null;
         $this->referenceId = null;
     }
 
@@ -60,6 +63,12 @@ class BannerService implements EventSubscriberInterface
         if ($place == null) {
             $place = $this->place;
         }
+
+        // If Place is not defined, Ad can't be shown
+        if (null === $place) {
+            return $bannerTag;
+        }
+
         if ($referenceId === false) {
             $referenceId = null;
         } elseif ($referenceId == null) {
@@ -94,60 +103,16 @@ class BannerService implements EventSubscriberInterface
                 // Fill Banner Tag
                 $this->fillBannerTag($bannerTag, $currentUrl);
 
-                // Fallback
-                // If banner tag is empty, type is not common, and place is serie, and there was a reference id, look for a serie banner without reference id
-                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
-                    $bannerTag->setPlace(BannerTag::PLACE_SHOW)
-                        ->setReferenceId(null);
+                // If Tag is Empty and Resource is available, fallback to place with no resource
+                if ($bannerTag->isEmpty() && $referenceId !== null) {
+                    $bannerTag->setReferenceId(null);
                     $this->fillBannerTag($bannerTag, $currentUrl);
                 }
 
-                // Fallback
-                // If banner tag is empty, type is not common, and place is movie, and there was a reference id, look for a movie banner without reference id
-                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
-                    $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
-                        ->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
-                }
-
-                // Fallback
-                // If banner tag is empty, type is common, and place is serie, and there was a reference id, look for a serie banner without reference id
-                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_SHOW && $referenceId !== null) {
-                    $bannerTag->setPlace(BannerTag::PLACE_SHOW)
-                        ->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
-
-                    // Fallback
-                    // If banner tag is still empty, look for a ROS tag
-                    if ($bannerTag->isEmpty()) {
-                        $bannerTag->setPlace(BannerTag::PLACE_ROS)
-                            ->setReferenceId(null);
-                        $this->fillBannerTag($bannerTag, $currentUrl);
-                    }
-                }
-
-                // Fallback
-                // If banner tag is empty, type is common, and place is movie, and there was a reference id, look for a movie banner without reference id
-                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() == BannerTag::TYPE_COMMON && $place == BannerTag::PLACE_MOVIE && $referenceId !== null) {
-                    $bannerTag->setPlace(BannerTag::PLACE_MOVIE)
-                        ->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
-
-                    // Fallback
-                    // If banner tag is still empty, look for a ROS tag
-                    if ($bannerTag->isEmpty()) {
-                        $bannerTag->setPlace(BannerTag::PLACE_ROS)
-                            ->setReferenceId(null);
-                        $this->fillBannerTag($bannerTag, $currentUrl);
-                    }
-                }
-
-                // Fallback
-                // If banner tag is empty, type is not common, and place is not ROS or Home, look up for a ROS banner
-                if ($bannerTag->isEmpty() && $bannerTag->getBannerType() != BannerTag::TYPE_COMMON && $place != BannerTag::PLACE_ROS) {
-                    $bannerTag->setPlace(BannerTag::PLACE_ROS)
-                        ->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
+                // If Banner is Empty, process with the places fallback
+                if ($bannerTag->isEmpty()) {
+                    $bannerTag->setReferenceId(null);
+                    $this->processFallbacks($bannerTag, $currentUrl);
                 }
 
                 // Save on Memcache
@@ -195,6 +160,19 @@ class BannerService implements EventSubscriberInterface
 
         if (isset($options['referenceId'])) {
             $this->referenceId = $options['referenceId'];
+        }
+    }
+
+    protected function processFallbacks(BannerTag $bannerTag, $currentUrl)
+    {
+        if (isset($this->fallbacks[$bannerTag->getPlace()])) {
+            $bannerTag->setPlace($this->fallbacks[$bannerTag->getPlace()]);
+            $this->fillBannerTag($bannerTag, $currentUrl);
+
+            // If still Empty, fallback to fallback
+            if ($bannerTag->isEmpty()) {
+                $this->processFallbacks($bannerTag, $currentUrl);
+            }
         }
     }
 
