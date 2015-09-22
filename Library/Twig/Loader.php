@@ -29,7 +29,6 @@ class Loader extends FilesystemLoader
             $template = $this->parser->parse($template);
 
             if ($template instanceof TemplateReferenceInterface) {
-
                 $cc = ($regionCC != null) ? $regionCC : '_region';
                 $key = $cc.'::'.$template->getLogicalName();
                 $templatePath = $template->getPath();

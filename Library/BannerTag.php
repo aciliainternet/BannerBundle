@@ -11,7 +11,6 @@
 
 namespace Acilia\Bundle\BannerBundle\Library;
 
-
 class BannerTag
 {
     const TYPE_COMMON = 'common';

@@ -74,7 +74,6 @@ class BannerService implements EventSubscriberInterface
 
         $this->dispatcher->dispatch(ResourceBannerEvent::NAME, $event);
         if ($event->isAvailable()) {
-
             $resource = $event->getResource();
 
             $key = 'Banner:' . $resource . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
