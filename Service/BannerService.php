@@ -85,7 +85,7 @@ class BannerService implements EventSubscriberInterface
         if ($event->isAvailable()) {
             $resource = $event->getResource();
 
-            $key = 'Banner:' . $resource . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
+            $key = 'Banner:' . $resource . ':' . $place . ':' . $bannerType . ':' . $this->getReferenceId($place, $referenceId) . ':' . sha1($currentUrl);
             $bannerTag = $this->memcache->get($key);
             if ($this->memcache->notFound()) {
 
@@ -94,7 +94,7 @@ class BannerService implements EventSubscriberInterface
                 $bannerTag->setResource($resource)
                     ->setBannerType($bannerType)
                     ->setPlace($place)
-                    ->setReferenceId($referenceId);
+                    ->setReferenceId($this->getReferenceId($place, $referenceId));
 
                 if ($this->isPageAvailable($bannerTag, $currentUrl)) {
                     return '<!-- BANNER BEGIN - This page has it\'s Ads Disabled - BANNER END -->';
@@ -103,16 +103,10 @@ class BannerService implements EventSubscriberInterface
                 // Fill Banner Tag
                 $this->fillBannerTag($bannerTag, $currentUrl);
 
-                // If Tag is Empty and Resource is available, fallback to place with no resource
-                if ($bannerTag->isEmpty() && $referenceId !== null) {
-                    $bannerTag->setReferenceId(null);
-                    $this->fillBannerTag($bannerTag, $currentUrl);
-                }
-
                 // If Banner is Empty, process with the places fallback
                 if ($bannerTag->isEmpty()) {
                     $bannerTag->setReferenceId(null);
-                    $this->processFallbacks($bannerTag, $currentUrl);
+                    $this->processFallbacks($bannerTag, $currentUrl, $referenceId);
                 }
 
                 // Save on Memcache
@@ -163,15 +157,16 @@ class BannerService implements EventSubscriberInterface
         }
     }
 
-    protected function processFallbacks(BannerTag $bannerTag, $currentUrl)
+    protected function processFallbacks(BannerTag $bannerTag, $currentUrl, $referenceId)
     {
         if (isset($this->fallbacks[$bannerTag->getPlace()])) {
             $bannerTag->setPlace($this->fallbacks[$bannerTag->getPlace()]);
+            $bannerTag->setReferenceId($this->getReferenceId($bannerTag->getPlace(), $referenceId));
             $this->fillBannerTag($bannerTag, $currentUrl);
 
             // If still Empty, fallback to fallback
             if ($bannerTag->isEmpty()) {
-                $this->processFallbacks($bannerTag, $currentUrl);
+                $this->processFallbacks($bannerTag, $currentUrl, $referenceId);
             }
         }
     }
@@ -272,6 +267,18 @@ class BannerService implements EventSubscriberInterface
         }
 
         return false;
+    }
+
+    protected function getReferenceId($place, $referenceId)
+    {
+        if (is_array ($referenceId)) {
+
+            return (isset ($referenceId[$place])) ? $referenceId[$place] : null;
+        } elseif ($referenceId === false) {
+            return null;
+        } else {
+            return $referenceId;
+        }
     }
 
     /**

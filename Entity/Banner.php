@@ -12,6 +12,7 @@
 namespace Acilia\Bundle\BannerBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Banner
@@ -38,6 +39,7 @@ class Banner
      * @var string
      *
      * @ORM\Column(name="banner_place", type="string", nullable=false)
+     * @Assert\NotBlank
      */
     private $place;
 
@@ -52,6 +54,7 @@ class Banner
      * @var string
      *
      * @ORM\Column(name="banner_name", type="string", length=255, nullable=false)
+     * @Assert\NotBlank
      */
     private $name;
 
@@ -59,6 +62,7 @@ class Banner
      * @var string
      *
      * @ORM\Column(name="banner_tag", type="text", nullable=false)
+     * @Assert\NotBlank
      */
     private $tag;
 
