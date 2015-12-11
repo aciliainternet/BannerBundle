@@ -406,5 +406,4 @@ class Banner
     {
         return $this->resourceId;
     }
-
 }
