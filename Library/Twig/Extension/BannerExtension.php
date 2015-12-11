@@ -23,10 +23,21 @@ class BannerExtension extends \Twig_Extension
     public function getFunctions()
     {
         return [
+            new \Twig_SimpleFunction('has_banner', [$this, 'has'], ['is_safe' => ['html']]),
             new \Twig_SimpleFunction('render_banner', [$this, 'render'], ['is_safe' => ['html']]),
         ];
     }
 
+    public function has($bannerType, $place = null, $referenceId = null)
+    {
+        $bannerTag = $this->getBanner()->getCode($bannerType, $place, $referenceId);
+        if ($bannerTag instanceof BannerTag) {
+            return (! $bannerTag->isEmpty());
+        }
+
+        return false;
+    }
+    
     public function render($bannerType, $place = null, $referenceId = null)
     {
         return $this->getBanner()->getCode($bannerType, $place, $referenceId);
