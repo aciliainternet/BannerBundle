@@ -1,6 +1,7 @@
 <?php
 namespace Acilia\Bundle\BannerBundle\Library\Twig\Extension;
 
+use Acilia\Bundle\BannerBundle\Library\BannerTag;
 use Acilia\Bundle\BannerBundle\Library\Twig\Tag\Banner\ConfiguratorTokenParser;
 use Acilia\Bundle\BannerBundle\Service\BannerService;
 
