@@ -221,23 +221,19 @@ class BannerService implements EventSubscriberInterface
             . '  AND (b.publishSince <= :publishSince OR b.publishSince IS NULL OR b.publishSince = \'0000-00-00\') '
             . '  AND (b.publishUntil >= :publishUntil OR b.publishUntil IS NULL OR b.publishUntil = \'0000-00-00\') '
             . ($bannerTag->getReferenceId() !== null ? '  AND b.referenceId = :referenceId ' : '  AND b.referenceId IS NULL ')
-            . ($bannerTag->getContext() !== null ? '  AND b.context = :context ': 'AND b.context IS NULL ')
-            . 'ORDER BY b.modifiedAt DESC, b.context DESC ';
+            . '  AND (b.context IS NULL OR b.context = :context) '
+            . 'ORDER BY b.context DESC , b.modifiedAt DESC';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
-            ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('typeId', $this->getType($bannerTag->getBannerType()))
             ->setParameter('place', $bannerTag->getPlace())
             ->setParameter('publishSince', date('Y-m-d'))
-            ->setParameter('publishUntil', date('Y-m-d'));
+            ->setParameter('publishUntil', date('Y-m-d'))
+            ->setParameter('context', $bannerTag->getContext());
 
         if ($bannerTag->getReferenceId() !== null) {
             $query->setParameter('referenceId', $bannerTag->getReferenceId());
-        }
-
-        if ($bannerTag->getContext() !== null) {
-            $query->setParameter('context', $bannerTag->getContext());
         }
 
         // Iterate Banners
