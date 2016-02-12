@@ -4,7 +4,7 @@ namespace Acilia\Bundle\BannerBundle\Event;
 use Symfony\Component\EventDispatcher\Event;
 
 /**
- * Event sent when the resurce for the banner is required
+ * Event sent when the resource for the banner is required
  *
  * @author Acilia Internet <info@acilia.es>
  */
@@ -22,6 +22,12 @@ class ResourceBannerEvent extends Event
      */
     protected $resource;
 
+    /**
+     * Context
+     * @var
+     */
+    protected $context;
+
 
     public function setResource($resource)
     {
@@ -33,6 +39,18 @@ class ResourceBannerEvent extends Event
     public function getResource()
     {
         return $this->resource;
+    }
+
+    public function setContext($context)
+    {
+        $this->context = $context;
+
+        return $this;
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 
     public function isAvailable()

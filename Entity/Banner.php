@@ -53,6 +53,13 @@ class Banner
     /**
      * @var string
      *
+     * @ORM\Column(name="banner_context", type="string", length=32, nullable=true)
+     */
+    private $context;
+
+    /**
+     * @var string
+     *
      * @ORM\Column(name="banner_name", type="string", length=255, nullable=false)
      * @Assert\NotBlank
      */
@@ -179,6 +186,29 @@ class Banner
     public function getReferenceId()
     {
         return $this->referenceId;
+    }
+
+    /**
+     * Set context
+     *
+     * @param  string $context
+     * @return Banner
+     */
+    public function setContext($context)
+    {
+        $this->context = $context;
+
+        return $this;
+    }
+
+    /**
+     * Get context
+     *
+     * @return string
+     */
+    public function getContext()
+    {
+        return $this->context;
     }
 
     /**

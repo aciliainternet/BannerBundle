@@ -16,6 +16,7 @@ class BannerTag
     protected $id;
     protected $name;
     protected $resource;
+    protected $context;
     protected $bannerType;
     protected $referenceId;
     protected $place;
@@ -44,6 +45,18 @@ class BannerTag
     public function getResource()
     {
         return $this->resource;
+    }
+
+    public function setContext($context)
+    {
+        $this->context = $context;
+
+        return $this;
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 
     public function setBannerType($bannerType)

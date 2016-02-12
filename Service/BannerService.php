@@ -44,6 +44,9 @@ class BannerService implements EventSubscriberInterface
     protected $place;
     protected $referenceId;
 
+    // Context
+    protected $context;
+
     public function __construct(EventDispatcherInterface $dispatcher, RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache, array $fallbacks)
     {
         $this->dispatcher = $dispatcher;
@@ -54,6 +57,17 @@ class BannerService implements EventSubscriberInterface
 
         $this->place = null;
         $this->referenceId = null;
+        $this->context = null;
+    }
+
+    public function getContext()
+    {
+        return $this->context;
+    }
+
+    public function setContext($context)
+    {
+        $this->context = $context;
     }
 
     public function getCode($bannerType, $place = null, $referenceId = null)
@@ -75,17 +89,23 @@ class BannerService implements EventSubscriberInterface
             $referenceId = $this->referenceId;
         }
 
+        $context = $this->getContext();
+
         // Get URL
         $currentUrl = $this->requestStack->getMasterRequest()->getPathInfo();
 
-        // Get resource
+        // Get resource and context
         $event = new ResourceBannerEvent();
 
         $this->dispatcher->dispatch(ResourceBannerEvent::NAME, $event);
         if ($event->isAvailable()) {
             $resource = $event->getResource();
 
-            $key = 'Banner:' . $resource . ':' . $place . ':' . $bannerType . ':' . $this->getReferenceId($place, $referenceId) . ':' . sha1($currentUrl);
+            if ($event->getContext() != null) {
+                $context = $event->getContext();
+            }
+
+            $key = 'Banner:' . $resource . ':' . $context . ':' . $place . ':' . $bannerType . ':' . $this->getReferenceId($place, $referenceId) . ':' . sha1($currentUrl);
             $bannerTag = $this->memcache->get($key);
             if ($this->memcache->notFound()) {
 
@@ -94,6 +114,7 @@ class BannerService implements EventSubscriberInterface
                 $bannerTag->setResource($resource)
                     ->setBannerType($bannerType)
                     ->setPlace($place)
+                    ->setContext($context)
                     ->setReferenceId($this->getReferenceId($place, $referenceId));
 
                 if ($this->isPageAvailable($bannerTag, $currentUrl)) {
@@ -200,9 +221,11 @@ class BannerService implements EventSubscriberInterface
             . '  AND (b.publishSince <= :publishSince OR b.publishSince IS NULL OR b.publishSince = \'0000-00-00\') '
             . '  AND (b.publishUntil >= :publishUntil OR b.publishUntil IS NULL OR b.publishUntil = \'0000-00-00\') '
             . ($bannerTag->getReferenceId() !== null ? '  AND b.referenceId = :referenceId ' : '  AND b.referenceId IS NULL ')
-            . 'ORDER BY b.modifiedAt DESC ';
+            . ($bannerTag->getContext() !== null ? '  AND b.context = :context ': 'AND b.context IS NULL ')
+            . 'ORDER BY b.modifiedAt DESC, b.context DESC ';
 
         $query = $this->doctrine->getManager()->createQuery($dql)
+            ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('resourceId', $bannerTag->getResource())
             ->setParameter('typeId', $this->getType($bannerTag->getBannerType()))
             ->setParameter('place', $bannerTag->getPlace())
@@ -211,6 +234,10 @@ class BannerService implements EventSubscriberInterface
 
         if ($bannerTag->getReferenceId() !== null) {
             $query->setParameter('referenceId', $bannerTag->getReferenceId());
+        }
+
+        if ($bannerTag->getContext() !== null) {
+            $query->setParameter('context', $bannerTag->getContext());
         }
 
         // Iterate Banners
@@ -237,8 +264,14 @@ class BannerService implements EventSubscriberInterface
         }
 
         // For Debugging
-        $bannerTag->addDebug("Resource Id: {$bannerTag->getResource()} | Place: {$bannerTag->getPlace()} " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: {$bannerTag->getBannerType()}");
+        $bannerTag->addDebug(sprintf("Resource Id: %s | Context: %s | Place: %s " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: %s",
+            $bannerTag->getResource(),
+            ($bannerTag->getContext() == null ? 'all' : $bannerTag->getContext()),
+            $bannerTag->getPlace(),
+            $bannerTag->getBannerType())
+        );
     }
+
 
     protected function isPageAvailable(BannerTag $bannerTag, $currentUrl)
     {

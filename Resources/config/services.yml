@@ -10,3 +10,10 @@ services:
         arguments: ["@acilia.banners"]
         tags:
           - { name: twig.extension }
+
+    # Init Listener
+    acilia.banners.listener.init:
+        class: Acilia\Bundle\BannerBundle\EventListener\InitListener
+        arguments: ["@acilia.banners", "@user_agent"]
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onRequest, priority: 17 }
