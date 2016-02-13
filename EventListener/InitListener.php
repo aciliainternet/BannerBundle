@@ -18,11 +18,12 @@ class InitListener
 
     public function onRequest(GetResponseEvent $event)
     {
-        $context = null;
         if ($this->userAgentService->getCurrent()->isPhone()) {
             $context = 'mobile';
         } elseif ($this->userAgentService->getCurrent()->isTablet()) {
             $context = 'tablet';
+        } else {
+            $context = 'desktop';
         }
 
         $this->bannerService->setContext($context);
