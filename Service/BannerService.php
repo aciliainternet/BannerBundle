@@ -12,32 +12,19 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class BannerService implements EventSubscriberInterface
 {
-    /**
-     * Event Dispatcher
-     *
-     * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
-     */
+    /** @var EventDispatcherInterface $dispatcher */
     protected $dispatcher;
 
-    /**
-     * Memcache Service
-     * @var \Acilia\Component\Memcached\Service\MemcachedService
-     */
+    /** @var MemcachedService $memcache */
     protected $memcache;
 
-    /**
-     * Request Stack
-     * @var \Symfony\Component\HttpFoundation\RequestStack
-     */
+    /** @var RequestStack $requestStack */
     protected $requestStack;
 
-    /**
-     * Doctrine
-     */
+    /** @var Doctrine $doctrine */
     protected $doctrine;
 
     protected $types;
-
     protected $fallbacks;
 
     // Options
@@ -101,11 +88,12 @@ class BannerService implements EventSubscriberInterface
         if ($event->isAvailable()) {
             $resource = $event->getResource();
 
+            // Overwrite ad context if required
             if ($event->getContext() != null) {
                 $context = $event->getContext();
             }
 
-            $key = 'Banner:' . $resource . ':' . $context . ':' . $place . ':' . $bannerType . ':' . $this->getReferenceId($place, $referenceId) . ':' . sha1($currentUrl);
+            $key = 'Banner:' . $resource . ':' . $context . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
             $bannerTag = $this->memcache->get($key);
             if ($this->memcache->notFound()) {
 
@@ -115,7 +103,7 @@ class BannerService implements EventSubscriberInterface
                     ->setBannerType($bannerType)
                     ->setPlace($place)
                     ->setContext($context)
-                    ->setReferenceId($this->getReferenceId($place, $referenceId));
+                    ->setReferenceId($referenceId);
 
                 if ($this->isPageAvailable($bannerTag, $currentUrl)) {
                     return '<!-- BANNER BEGIN - This page has it\'s Ads Disabled - BANNER END -->';
@@ -124,10 +112,18 @@ class BannerService implements EventSubscriberInterface
                 // Fill Banner Tag
                 $this->fillBannerTag($bannerTag, $currentUrl);
 
-                // If Banner is Empty, process with the places fallback
-                if ($bannerTag->isEmpty()) {
-                    $bannerTag->setReferenceId(null);
-                    $this->processFallbacks($bannerTag, $currentUrl, $referenceId);
+                $fallbacks = $this->fallbacks;
+                while ($bannerTag->isEmpty() && count($fallbacks) > 0) {
+
+                    $fallback = array_slice($fallbacks, 0, 1);
+                    array_shift($fallbacks);
+
+                    $place = key($fallback);
+                    $referenceId = $fallback[$place];
+                    $bannerTag->setPlace($place)->setReferenceId($referenceId);
+
+                    // Fill Banner Tag
+                    $this->fillBannerTag($bannerTag, $currentUrl);
                 }
 
                 // Save on Memcache
@@ -176,38 +172,25 @@ class BannerService implements EventSubscriberInterface
         if (isset($options['referenceId'])) {
             $this->referenceId = $options['referenceId'];
         }
-    }
 
-    protected function processFallbacks(BannerTag $bannerTag, $currentUrl, $referenceId)
-    {
-        if (isset($this->fallbacks[$bannerTag->getPlace()])) {
-            $bannerTag->setPlace($this->fallbacks[$bannerTag->getPlace()]);
-            $bannerTag->setReferenceId($this->getReferenceId($bannerTag->getPlace(), $referenceId));
-            $this->fillBannerTag($bannerTag, $currentUrl);
-
-            // If still Empty, fallback to fallback
-            if ($bannerTag->isEmpty()) {
-                $this->processFallbacks($bannerTag, $currentUrl, $referenceId);
-            }
+        if (isset($options['fallbacks'])) {
+            $this->fallbacks = $options['fallbacks'];
         }
     }
 
-    protected function compareUrl($currentUrl, $pattern)
+    /**
+     * Get the Subscribed Events
+     *
+     * @return array
+     */
+    public static function getSubscribedEvents()
     {
-        $check = false;
-
-        if ($pattern != '') {
-            $_includes = explode(PHP_EOL, $pattern);
-            foreach ($_includes as $_include) {
-                $_include = '@^' . trim(str_replace('*', '.*', $_include)) . '$@i';
-                if (preg_match($_include, $currentUrl)) {
-                    $check = true;
-                }
-            }
-        }
-
-        return $check;
+        return array(
+            KernelEvents::CONTROLLER => array('onKernelController', -128),
+            KernelEvents::RESPONSE => 'onKernelResponse',
+        );
     }
+
 
     protected function fillBannerTag(BannerTag $bannerTag, $currentUrl)
     {
@@ -261,13 +244,12 @@ class BannerService implements EventSubscriberInterface
 
         // For Debugging
         $bannerTag->addDebug(sprintf("Resource Id: %s | Context: %s | Place: %s " . (($bannerTag->getReferenceId() !== null) ? "| ReferenceId: {$bannerTag->getReferenceId()} " : ''). "| Type: %s",
-            $bannerTag->getResource(),
-            ($bannerTag->getContext() == null ? 'all' : $bannerTag->getContext()),
-            $bannerTag->getPlace(),
-            $bannerTag->getBannerType())
+                $bannerTag->getResource(),
+                ($bannerTag->getContext() == null ? 'all' : $bannerTag->getContext()),
+                $bannerTag->getPlace(),
+                $bannerTag->getBannerType())
         );
     }
-
 
     protected function isPageAvailable(BannerTag $bannerTag, $currentUrl)
     {
@@ -298,28 +280,20 @@ class BannerService implements EventSubscriberInterface
         return false;
     }
 
-    protected function getReferenceId($place, $referenceId)
+    protected function compareUrl($currentUrl, $pattern)
     {
-        if (is_array ($referenceId)) {
+        $check = false;
 
-            return (isset ($referenceId[$place])) ? $referenceId[$place] : null;
-        } elseif ($referenceId === false) {
-            return null;
-        } else {
-            return $referenceId;
+        if ($pattern != '') {
+            $_includes = explode(PHP_EOL, $pattern);
+            foreach ($_includes as $_include) {
+                $_include = '@^' . trim(str_replace('*', '.*', $_include)) . '$@i';
+                if (preg_match($_include, $currentUrl)) {
+                    $check = true;
+                }
+            }
         }
-    }
 
-    /**
-     * Get the Subscribed Events
-     *
-     * @return array
-     */
-    public static function getSubscribedEvents()
-    {
-        return array(
-            KernelEvents::CONTROLLER => array('onKernelController', -128),
-            KernelEvents::RESPONSE => 'onKernelResponse',
-        );
+        return $check;
     }
 }
