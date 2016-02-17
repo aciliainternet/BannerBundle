@@ -1,5 +1,4 @@
 <?php
-
 /*
  * This file is part of the Acilia Component / Banner Bundle.
  *
@@ -21,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * @author Alejandro Glejberman <alejandro@acilia.es>
  *
- * @ORM\Entity()
+ * @ORM\Entity(repositoryClass="Acilia\Bundle\BannerBundle\EntityRepository\BannerRepository")
  * @ORM\Table(name="banner", options={"collate"="utf8_unicode_ci", "charset"="utf8", "engine"="InnoDB"})
  */
 class Banner
