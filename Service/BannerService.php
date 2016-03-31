@@ -120,7 +120,8 @@ class BannerService implements EventSubscriberInterface
                     ->setBannerType($bannerType)
                     ->setPlace($place)
                     ->setContext($context)
-                    ->setReferenceId($referenceId);
+                    ->setReferenceId($referenceId)
+                    ->setCacheKey($key);
 
                 if ($bannerRepository->isPageAvailable($bannerTag, $currentUrl, $this->getType('none'))) {
                     return '<!-- BANNER BEGIN - This page has it\'s Ads Disabled - BANNER END -->';

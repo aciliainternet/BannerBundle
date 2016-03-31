@@ -13,6 +13,7 @@ namespace Acilia\Bundle\BannerBundle\Library;
 
 class BannerTag
 {
+    protected $cacheKey;
     protected $id;
     protected $name;
     protected $resource;
@@ -22,6 +23,12 @@ class BannerTag
     protected $place;
     protected $tag = '';
     protected $debug = [];
+
+    public function setCacheKey($cacheKey)
+    {
+        $this->cacheKey = $cacheKey;
+        return $this;
+    }
 
     public function setId($id)
     {
@@ -123,6 +130,7 @@ class BannerTag
         }
 
         $tag = '<!-- BANNER BEGIN ** ID: ' . $this->id . ' - ' . str_replace('-', '_', $this->name) . ' ** ' . PHP_EOL . $debug  . ' -->' . PHP_EOL
+            . '<!-- CacheKey: ' . $this->cacheKey . ' -->' . PHP_EOL
             . $this->tag . PHP_EOL
             . '<!-- BANNER END -->';
         return $tag;
