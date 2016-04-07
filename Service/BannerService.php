@@ -33,6 +33,7 @@ class BannerService implements EventSubscriberInterface
 
     // Context
     protected $context;
+    protected $instances;
 
     public function __construct(EventDispatcherInterface $dispatcher, RequestStack $requestStack, Doctrine $doctrine, MemcachedService $memcache, array $fallbacks)
     {
@@ -45,6 +46,7 @@ class BannerService implements EventSubscriberInterface
         $this->place = null;
         $this->referenceId = null;
         $this->context = null;
+        $this->instances = [];
     }
 
     public function configure(array $options)
@@ -110,7 +112,13 @@ class BannerService implements EventSubscriberInterface
                 $context = $event->getContext();
             }
 
+            // Banner identifier key
             $key = 'Banner:' . $resource . ':' . $context . ':' . $place . ':' . $bannerType . ':' . $referenceId . ':' . sha1($currentUrl);
+
+            if (isset($this->instances[$key])) {
+                return $this->instances[$key];
+            }
+
             $bannerTag = $this->memcache->get($key);
             if ($this->memcache->notFound()) {
 
@@ -144,7 +152,8 @@ class BannerService implements EventSubscriberInterface
                     $bannerRepository->fillBannerTag($bannerTag, $currentUrl, $this->getType($bannerTag->getBannerType()));
                 }
 
-                // Save on Memcache
+                // Save on Memcache and internally
+                $this->instances[$key] = $bannerTag;
                 $this->memcache->set($key, $bannerTag, 60);
             }
         }
