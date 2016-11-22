@@ -64,6 +64,19 @@ class BannerService implements EventSubscriberInterface
         }
     }
 
+    public function getParam($param)
+    {
+        if ($param == 'place') {
+            return $this->place;
+        } elseif ($param == 'referenceId') {
+            return $this->referenceId;
+        } elseif ($param == 'fallbacks') {
+            return $this->fallbacks;
+        }
+
+        return null;
+    }
+
     public function getContext()
     {
         return $this->context;

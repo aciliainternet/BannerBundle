@@ -26,6 +26,7 @@ class BannerExtension extends \Twig_Extension
         return [
             new \Twig_SimpleFunction('has_banner', [$this, 'has'], ['is_safe' => ['html']]),
             new \Twig_SimpleFunction('render_banner', [$this, 'render'], ['is_safe' => ['html']]),
+            new \Twig_SimpleFunction('param_banner', [$this, 'param'], ['is_safe' => ['html']]),
         ];
     }
 
@@ -42,6 +43,11 @@ class BannerExtension extends \Twig_Extension
     public function render($bannerType, $place = null, $referenceId = null)
     {
         return $this->getBanner()->getCode($bannerType, $place, $referenceId);
+    }
+
+    public function param($param)
+    {
+        return $this->getBanner()->getParam($param);
     }
 
     public function getBanner()
