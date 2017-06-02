@@ -5,6 +5,10 @@ services:
         class: Acilia\Bundle\BannerBundle\Service\BannerService
         arguments: ["@event_dispatcher", "@request_stack", "@doctrine", "@core.memcached", %acilia.banner.place_fallbacks%]
 
+    acilia.useragent:
+        class: Acilia\Bundle\BannerBundle\Service\UserAgentService
+        arguments: ["@request_stack"]
+
     acilia.banners.twig_extension:
         class: Acilia\Bundle\BannerBundle\Library\Twig\Extension\BannerExtension
         arguments: ["@acilia.banners"]
@@ -14,6 +18,6 @@ services:
     # Init Listener
     acilia.banners.listener.init:
         class: Acilia\Bundle\BannerBundle\EventListener\InitListener
-        arguments: ["@acilia.banners", "@user_agent"]
+        arguments: ["@acilia.banners", "@acilia.useragent"]
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onRequest, priority: 17 }
