@@ -2,8 +2,8 @@
 namespace Acilia\Bundle\BannerBundle\EventListener;
 
 use Acilia\Bundle\BannerBundle\Service\BannerService;
+use Acilia\Bundle\BannerBundle\Service\UserAgentService;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use AndresMontanez\UserAgentStringBundle\Service\UserAgentService;
 
 class InitListener
 {
