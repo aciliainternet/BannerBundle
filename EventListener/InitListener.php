@@ -2,8 +2,8 @@
 namespace Acilia\Bundle\BannerBundle\EventListener;
 
 use Acilia\Bundle\BannerBundle\Service\BannerService;
+use Acilia\Bundle\BannerBundle\Service\UserAgentService;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use AndresMontanez\UserAgentStringBundle\Service\UserAgentService;
 
 class InitListener
 {
@@ -18,14 +18,6 @@ class InitListener
 
     public function onRequest(GetResponseEvent $event)
     {
-        if ($this->userAgentService->getCurrent()->isPhone()) {
-            $context = 'mobile';
-        } elseif ($this->userAgentService->getCurrent()->isTablet()) {
-            $context = 'tablet';
-        } else {
-            $context = 'desktop';
-        }
-
-        $this->bannerService->setContext($context);
+        $this->bannerService->setContext($this->userAgentService->getDeviceType());
     }
 }
