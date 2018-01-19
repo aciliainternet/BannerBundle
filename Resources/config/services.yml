@@ -3,7 +3,7 @@ parameters:
 services:
     acilia.banners:
         class: Acilia\Bundle\BannerBundle\Service\BannerService
-        arguments: ["@event_dispatcher", "@request_stack", "@doctrine", "@core.memcached", %acilia.banner.place_fallbacks%]
+        arguments: ["@event_dispatcher", "@request_stack", "@doctrine", "@core.memcached", "%acilia.banner.place_fallbacks%"]
 
     acilia.useragent:
         class: Acilia\Bundle\BannerBundle\Service\UserAgentService
